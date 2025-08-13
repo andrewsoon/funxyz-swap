@@ -1,0 +1,10 @@
+.topbar-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2.5rem;
+}
+
+.topbar-logo {
+  width: 85px;
+}

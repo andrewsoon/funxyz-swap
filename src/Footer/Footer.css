@@ -1,0 +1,26 @@
+.footer-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2.5rem;
+}
+
+.footer-links-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footer-copyright {
+  color: #ffffff4c;
+}
+
+.footer-copyright:hover {
+  opacity: 0;
+}
+
+@media (max-width: 600px) {
+  .footer-wrapper {
+    flex-direction: column;
+  }
+}
