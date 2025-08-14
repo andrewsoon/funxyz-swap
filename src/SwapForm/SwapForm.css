@@ -80,7 +80,7 @@
   cursor: pointer;
 }
 
-.form-wrapper:focus-within {
+.form-wrapper.focus {
   background-color: #181818;
 }
 
@@ -88,13 +88,13 @@
   margin: 8px 0px;
 }
 
-.amount-input {
+.amount-row {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.amount-input:focus-within {
+.amount-input.focus {
   background-color: #181818;
 }
 
@@ -225,6 +225,11 @@
   border-radius: 8px;
 }
 
+.last-update-text {
+  font-size: 12px;
+  margin: 0;
+}
+
 @media (max-width: 600px) {
   .quick-select-row {
     flex-direction: column;
@@ -266,5 +271,9 @@
 
   .token-value {
     margin-bottom: 8px;
+  }
+
+  .last-update-text {
+    font-size: 8px;
   }
 }

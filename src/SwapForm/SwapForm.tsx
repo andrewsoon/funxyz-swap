@@ -1,7 +1,7 @@
 import { getAssetErc20ByChainAndSymbol, getAssetPriceInfo, type Erc20AssetInfo } from "@funkit/api-base";
 import { BigNumber } from "bignumber.js";
 import type React from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Arrow from '../assets/Arrow-White.svg';
 import Chevron from '../assets/Chevron-White.svg';
 import Modal from "../common/Modal/Modal";
@@ -17,6 +17,7 @@ type TokenSourceOrDest = 'src' | 'dst'
 const SwapForm: React.FC = () => {
   const [tokenProperties, setTokenProperties] = useState<{ [x: string]: Erc20AssetInfo } | undefined>(undefined)
   const [tokenPriceMap, setTokenPriceMap] = useState<{ [x: string]: number } | undefined>(undefined)
+  const [pricesLastUpdated, setPricesLastUpdated] = useState<undefined | string>(undefined)
 
   const [lastEditedToken, setLastEditedToken] = useState<TokenSourceOrDest>('src')
   const [srcToken, setSrcToken] = useState<undefined | string>(undefined)
@@ -89,6 +90,9 @@ const SwapForm: React.FC = () => {
           }
         })
         setTokenPriceMap(priceMap)
+        const timestampString = new Date().toISOString()
+        setPricesLastUpdated(timestampString)
+        console.info(`Prices updated at: ${timestampString}`, priceMap)
       } catch (err) {
         console.error('Failed to fetch token prices:', err)
       }
@@ -130,7 +134,7 @@ const SwapForm: React.FC = () => {
       dstDp,
       dstTokenValue,
     }
-  }, [tokenPriceMap, srcToken, srcTokenAmount])
+  }, [tokenPriceMap, srcToken, srcTokenAmount, dstToken, dstTokenAmount])
 
   const handleInputAmountChange = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -138,6 +142,7 @@ const SwapForm: React.FC = () => {
   ) => {
     const isSrc = type === "src"
     const parsed = parseFloat(e.target.value)
+
     let amount
     if (!isNaN(parsed)) {
       amount = new BigNumber(parsed).toNumber()
@@ -153,10 +158,15 @@ const SwapForm: React.FC = () => {
   }
 
   const handleBlur = () => {
-    const cleanedSrcAmount = new BigNumber(srcTokenAmount ?? 0).dp(srcDp, BigNumber.ROUND_DOWN).toNumber()
-    const cleanedDstAmount = new BigNumber(dstTokenAmount ?? 0).dp(dstDp, BigNumber.ROUND_DOWN).toNumber()
-    setSrcTokenAmount(Math.max(cleanedSrcAmount, 0))
-    setDstTokenAmount(Math.max(cleanedDstAmount, 0))
+    if (srcTokenAmount) {
+      const cleanedSrcAmount = new BigNumber(srcTokenAmount).dp(srcDp, BigNumber.ROUND_DOWN).toNumber()
+      setSrcTokenAmount(Math.max(cleanedSrcAmount, 0))
+    }
+
+    if (dstTokenAmount) {
+      const cleanedDstAmount = new BigNumber(dstTokenAmount).dp(dstDp, BigNumber.ROUND_DOWN).toNumber()
+      setDstTokenAmount(Math.max(cleanedDstAmount, 0))
+    }
   }
 
   useEffect(() => {
@@ -164,7 +174,6 @@ const SwapForm: React.FC = () => {
 
     const srcPrice = tokenPriceMap[srcToken] ?? 0
     const dstPrice = tokenPriceMap[dstToken] ?? 0
-
     if (lastEditedToken === 'src') {
       if (!srcTokenAmount) return
       const convertedDstAmount = new BigNumber(srcTokenAmount).times(srcPrice).div(dstPrice).dp(dstDp, BigNumber.ROUND_DOWN).toNumber()
@@ -178,9 +187,8 @@ const SwapForm: React.FC = () => {
         setSrcTokenAmount(convertedSrcAmount)
       }
     }
-  }, [lastEditedToken, srcToken, dstTokenAmount, srcToken, dstToken, tokenPriceMap])
+  }, [lastEditedToken, srcToken, dstTokenAmount, srcToken, dstToken, tokenPriceMap, srcTokenAmount, dstTokenAmount])
 
-  console.log('xx', srcTokenAmount)
   return (
     <div className="swapform-wrapper">
       <h3 className="header">Token Price Explorer</h3>
@@ -206,10 +214,23 @@ const SwapForm: React.FC = () => {
         </div>
       </div>
       <div className="form-row">
-        <div className="form-wrapper" onClick={() => srcInputRef.current?.focus()}>
+        <div className={`form-wrapper ${lastEditedToken === 'src' && 'focus'}`}
+          onClick={() => {
+            setLastEditedToken('src')
+            srcInputRef.current?.focus()
+          }}
+        >
           <h4 className="form-header">From</h4>
-          <div className="amount-input">
-            <input ref={srcInputRef} type="number" value={srcTokenAmount ?? ''} onChange={(e) => handleInputAmountChange(e, 'src')} placeholder="0" onBlur={handleBlur} />
+          <div className={`amount-row ${lastEditedToken === 'src' && 'focus'}`}>
+            <input ref={srcInputRef}
+              type="number"
+              value={srcTokenAmount ?? ''}
+              className={`amount-input ${lastEditedToken === 'src' && 'focus'}`}
+              onChange={(e) => handleInputAmountChange(e, 'src')}
+              placeholder="0"
+              onBlur={handleBlur}
+              onFocus={() => setLastEditedToken('src')}
+            />
             <button className="token-select" onClick={() => {
               setLastEditedToken('src')
               setOpenModal(true)
@@ -232,10 +253,24 @@ const SwapForm: React.FC = () => {
         <div className="arrow-wrapper">
           <img src={Arrow} alt="arrow-icon" className="arrow-icon" />
         </div>
-        <div className="form-wrapper" onClick={() => dstInputRef.current?.focus()} >
+        <div className={`form-wrapper ${lastEditedToken === 'dst' && 'focus'}`}
+          onClick={() => {
+            setLastEditedToken('dst')
+            dstInputRef.current?.focus()
+          }}
+        >
           <h4 className="form-header">To</h4>
-          <div className="amount-input">
-            <input ref={dstInputRef} type="number" value={dstTokenAmount ?? ''} onChange={(e) => handleInputAmountChange(e, 'dst')} placeholder="0" onBlur={(handleBlur)} />
+          <div className={`amount-row ${lastEditedToken === 'dst' && 'focus'}`}>
+            <input
+              ref={dstInputRef}
+              type="number"
+              value={dstTokenAmount ?? ''}
+              className={`amount-input ${lastEditedToken === 'dst' && 'focus'}`}
+              onChange={(e) => handleInputAmountChange(e, 'dst')}
+              placeholder="0"
+              onBlur={handleBlur}
+              onFocus={() => setLastEditedToken('dst')}
+            />
             <button className="token-select" onClick={() => {
               setLastEditedToken('dst')
               setOpenModal(true)
@@ -279,6 +314,7 @@ const SwapForm: React.FC = () => {
               )
             })}
           </div>
+          <p className="last-update-text">Last updated: {pricesLastUpdated ?? "-"}</p>
         </div>
       </Modal>
     </div>
