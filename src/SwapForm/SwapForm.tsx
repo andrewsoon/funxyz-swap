@@ -17,11 +17,13 @@ type TokenSourceOrDest = 'src' | 'dst'
 const SwapForm: React.FC = () => {
   const [tokenProperties, setTokenProperties] = useState<{ [x: string]: Erc20AssetInfo } | undefined>(undefined)
   const [tokenPriceMap, setTokenPriceMap] = useState<{ [x: string]: number } | undefined>(undefined)
-  const [selectingToken, setSelectingToken] = useState<TokenSourceOrDest>('src')
+
+  const [lastEditedToken, setLastEditedToken] = useState<TokenSourceOrDest>('src')
   const [srcToken, setSrcToken] = useState<undefined | string>(undefined)
   const [srcTokenAmount, setSrcTokenAmount] = useState<number | undefined>(undefined)
   const [dstToken, setDstToken] = useState<undefined | string>(undefined)
   const [dstTokenAmount, setDstTokenAmount] = useState<number | undefined>(undefined)
+
   const [openModal, setOpenModal] = useState<boolean>(false)
 
   const dstInputRef = useRef<HTMLInputElement>(null)
@@ -98,62 +100,87 @@ const SwapForm: React.FC = () => {
 
   }, [tokenProperties])
 
-  const handleSelectToken = (symbol: string) => {
-    if (selectingToken === 'src') {
+  const handleModalSelectToken = (symbol: string) => {
+    if (lastEditedToken === 'src') {
       setSrcToken(symbol)
     } else {
       setDstToken(symbol)
     }
-    setSrcTokenAmount(undefined)
-    setDstTokenAmount(undefined)
     setOpenModal(false)
   }
 
-  const handleInputAmountChange = useCallback((
+  const {
+    srcDp,
+    srcTokenValue,
+    dstDp,
+    dstTokenValue
+  } = useMemo(() => {
+    const srcDp = tokenProperties?.[srcToken ?? '']?.decimals ?? 0
+    const srcPrice = tokenPriceMap?.[srcToken ?? ''] ?? 0
+    const srcAmount = srcTokenAmount ?? 0
+    const srcTokenValue = new BigNumber(srcAmount).dp(srcDp, BigNumber.ROUND_DOWN).times(srcPrice)
+
+    const dstDp = tokenProperties?.[dstToken ?? '']?.decimals ?? 0
+    const dstPrice = tokenPriceMap?.[dstToken ?? ''] ?? 0
+    const dstAmount = dstTokenAmount ?? 0
+    const dstTokenValue = new BigNumber(dstAmount).dp(dstDp, BigNumber.ROUND_DOWN).times(dstPrice)
+    return {
+      srcDp,
+      srcTokenValue,
+      dstDp,
+      dstTokenValue,
+    }
+  }, [tokenPriceMap, srcToken, srcTokenAmount])
+
+  const handleInputAmountChange = (
     e: React.ChangeEvent<HTMLInputElement>,
     type: TokenSourceOrDest
   ) => {
-    const parsed = parseFloat(e.target.value)
-    const amount = isNaN(parsed) ? undefined : parsed
-
     const isSrc = type === "src"
-    const fromToken = isSrc ? srcToken : dstToken
-    const toToken = isSrc ? dstToken : srcToken
-
-    const fromPrice = tokenPriceMap?.[fromToken ?? ""]
-    const toPrice = tokenPriceMap?.[toToken ?? ""]
-
-    if (fromPrice && toPrice) {
-      const convertedAmount = new BigNumber(amount ?? 0).times(fromPrice).div(toPrice).dp(5).toNumber()
-
-      if (isSrc) {
-        setDstTokenAmount(convertedAmount)
-      } else {
-        setSrcTokenAmount(convertedAmount)
-      }
+    const parsed = parseFloat(e.target.value)
+    let amount
+    if (!isNaN(parsed)) {
+      amount = new BigNumber(parsed).toNumber()
     }
 
     if (isSrc) {
+      setLastEditedToken('src')
       setSrcTokenAmount(amount)
     } else {
+      setLastEditedToken('dst')
       setDstTokenAmount(amount)
     }
-  }, [tokenPriceMap, srcToken, dstToken])
+  }
 
-  const srcTokenValue = useMemo(() => {
-    const price = tokenPriceMap?.[srcToken ?? ''] ?? 0
-    const amount = srcTokenAmount ?? 0
-    const value = new BigNumber(amount).times(price)
-    return value
-  }, [tokenPriceMap, srcToken, srcTokenAmount])
+  const handleBlur = () => {
+    const cleanedSrcAmount = new BigNumber(srcTokenAmount ?? 0).dp(srcDp, BigNumber.ROUND_DOWN).toNumber()
+    const cleanedDstAmount = new BigNumber(dstTokenAmount ?? 0).dp(dstDp, BigNumber.ROUND_DOWN).toNumber()
+    setSrcTokenAmount(Math.max(cleanedSrcAmount, 0))
+    setDstTokenAmount(Math.max(cleanedDstAmount, 0))
+  }
 
-  const dstTokenValue = useMemo(() => {
-    const price = tokenPriceMap?.[dstToken ?? ''] ?? 0
-    const amount = dstTokenAmount ?? 0
-    const value = new BigNumber(amount).times(price)
-    return value
-  }, [tokenPriceMap, dstToken, dstTokenAmount])
+  useEffect(() => {
+    if (!srcToken || !dstToken || !tokenPriceMap) return
 
+    const srcPrice = tokenPriceMap[srcToken] ?? 0
+    const dstPrice = tokenPriceMap[dstToken] ?? 0
+
+    if (lastEditedToken === 'src') {
+      if (!srcTokenAmount) return
+      const convertedDstAmount = new BigNumber(srcTokenAmount).times(srcPrice).div(dstPrice).dp(dstDp, BigNumber.ROUND_DOWN).toNumber()
+      if (dstTokenAmount !== convertedDstAmount) {
+        setDstTokenAmount(convertedDstAmount)
+      }
+    } else {
+      if (!dstTokenAmount) return
+      const convertedSrcAmount = new BigNumber(dstTokenAmount).times(dstPrice).div(srcPrice).dp(srcDp, BigNumber.ROUND_DOWN).toNumber()
+      if (srcTokenAmount !== convertedSrcAmount) {
+        setSrcTokenAmount(convertedSrcAmount)
+      }
+    }
+  }, [lastEditedToken, srcToken, dstTokenAmount, srcToken, dstToken, tokenPriceMap])
+
+  console.log('xx', srcTokenAmount)
   return (
     <div className="swapform-wrapper">
       <h3 className="header">Token Price Explorer</h3>
@@ -162,9 +189,15 @@ const SwapForm: React.FC = () => {
         Quick select (From):
         <div className="quick-select-wrapper" >
           {QUICK_SELECT_WHITELIST.map((symbol) => {
-            console.log('xx', getTokenIcon(symbol))
             return (
-              <button className={`quick-select ${srcToken === symbol ? 'active' : ''}`} onClick={() => setSrcToken(symbol)} key={`quick-select-${symbol}`}>
+              <button
+                className={`quick-select ${srcToken === symbol ? 'active' : ''}`}
+                onClick={() => {
+                  setLastEditedToken('src')
+                  setSrcToken(symbol)
+                }}
+                key={`quick-select-${symbol}`}
+              >
                 <img src={getTokenIcon(symbol)} alt={`${symbol}-icon`} />
                 <p>{symbol}</p>
               </button>
@@ -176,9 +209,9 @@ const SwapForm: React.FC = () => {
         <div className="form-wrapper" onClick={() => srcInputRef.current?.focus()}>
           <h4 className="form-header">From</h4>
           <div className="amount-input">
-            <input ref={srcInputRef} type="number" value={srcTokenAmount ?? ''} onChange={(e) => handleInputAmountChange(e, 'src')} placeholder="0" />
+            <input ref={srcInputRef} type="number" value={srcTokenAmount ?? ''} onChange={(e) => handleInputAmountChange(e, 'src')} placeholder="0" onBlur={handleBlur} />
             <button className="token-select" onClick={() => {
-              setSelectingToken('src')
+              setLastEditedToken('src')
               setOpenModal(true)
             }}
             >
@@ -202,9 +235,9 @@ const SwapForm: React.FC = () => {
         <div className="form-wrapper" onClick={() => dstInputRef.current?.focus()} >
           <h4 className="form-header">To</h4>
           <div className="amount-input">
-            <input ref={dstInputRef} type="number" value={dstTokenAmount ?? ''} onChange={(e) => handleInputAmountChange(e, 'dst')} placeholder="0" />
+            <input ref={dstInputRef} type="number" value={dstTokenAmount ?? ''} onChange={(e) => handleInputAmountChange(e, 'dst')} placeholder="0" onBlur={(handleBlur)} />
             <button className="token-select" onClick={() => {
-              setSelectingToken('dst')
+              setLastEditedToken('dst')
               setOpenModal(true)
             }}
             >
@@ -228,7 +261,7 @@ const SwapForm: React.FC = () => {
       </div>
       <Modal isOpen={openModal} onClose={() => setOpenModal(false)}>
         <div>
-          <h4>Select a Token ({selectingToken === 'src' ? 'From' : 'To'})</h4>
+          <h4>Select a Token ({lastEditedToken === 'src' ? 'From' : 'To'})</h4>
           <div className="token-list-header">
             <p>Token</p>
             <p>Price</p>
@@ -236,7 +269,7 @@ const SwapForm: React.FC = () => {
           <div className="token-list">
             {ERC20_TOKEN_WHITELIST.map((token) => {
               return (
-                <div className="token-option" onClick={() => handleSelectToken(token.symbol)} key={token.symbol}>
+                <div className="token-option" onClick={() => handleModalSelectToken(token.symbol)} key={token.symbol}>
                   <div className="token-group">
                     <img src={`./node_modules/cryptocurrency-icons/svg/color/${token.symbol.toLowerCase()}.svg`} alt={`${srcToken}-icon`} />
                     <p>{token.symbol}</p>

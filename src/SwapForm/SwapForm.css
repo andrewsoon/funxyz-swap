@@ -91,6 +91,7 @@
 .amount-input {
   display: flex;
   align-items: center;
+  gap: 8px;
 }
 
 .amount-input:focus-within {
@@ -101,13 +102,14 @@
   display: flex;
   align-items: center;
   white-space: nowrap;
-  padding: 8px;
+  padding: 8px 12px;
   background: transparent;
   outline: inherit;
   border: 1px solid #ffffff4d;
   color: #fff;
   gap: 8px;
   border-radius: 36px;
+  height: 42px;
 }
 
 .token-select:hover {
@@ -121,10 +123,11 @@
 
 .token-select > p {
   margin: 0;
+  font-size: 14px;
 }
 
 .token-select > img.chevron {
-  width: 16px;
+  width: 12px;
   rotate: 90deg;
 }
 
@@ -175,6 +178,10 @@
 
 .token-group > img {
   width: 24px;
+}
+
+.token-group > p {
+  font-weight: 600;
 }
 
 .input-label {
