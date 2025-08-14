@@ -8,6 +8,7 @@ import Modal from "../common/Modal/Modal";
 import { ERC20_TOKEN_WHITELIST, type ERC20Token } from "../constants/tokens";
 import { getTokenIcon } from "../utils/tokenIcon";
 import "./SwapForm.css";
+import Skeleton from "../common/Loaders/Skeleton";
 
 const QUICK_SELECT_WHITELIST = ['USDC', 'USDT', 'ETH', 'WBTC']
 const apiKey: string = import.meta.env.VITE_API_KEY
@@ -105,6 +106,7 @@ const SwapForm: React.FC = () => {
   }, [tokenProperties])
 
   const handleModalSelectToken = (symbol: string) => {
+    if (!tokenProperties || !tokenPriceMap) return
     if (lastEditedToken === 'src') {
       setSrcToken(symbol)
     } else {
@@ -134,7 +136,7 @@ const SwapForm: React.FC = () => {
       dstDp,
       dstTokenValue,
     }
-  }, [tokenPriceMap, srcToken, srcTokenAmount, dstToken, dstTokenAmount])
+  }, [tokenPriceMap, tokenProperties, srcToken, srcTokenAmount, dstToken, dstTokenAmount])
 
   const handleInputAmountChange = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -187,34 +189,37 @@ const SwapForm: React.FC = () => {
         setSrcTokenAmount(convertedSrcAmount)
       }
     }
-  }, [lastEditedToken, srcToken, dstTokenAmount, srcToken, dstToken, tokenPriceMap, srcTokenAmount, dstTokenAmount])
+  }, [lastEditedToken, srcToken, dstTokenAmount, dstToken, tokenPriceMap, srcTokenAmount, dstDp, srcDp])
 
   return (
-    <div className="swapform-wrapper">
+    <div className="swapform-wrapper main-fade-in">
       <h3 className="header">Token Price Explorer</h3>
       <h4 className="subheader">Compare token values before you swap</h4>
-      <div className="quick-select-row">
+      <div className="quick-select-row fade-in">
         Quick select (From):
-        <div className="quick-select-wrapper" >
-          {QUICK_SELECT_WHITELIST.map((symbol) => {
-            return (
-              <button
-                className={`quick-select ${srcToken === symbol ? 'active' : ''}`}
-                onClick={() => {
-                  setLastEditedToken('src')
-                  setSrcToken(symbol)
-                }}
-                key={`quick-select-${symbol}`}
-              >
-                <img src={getTokenIcon(symbol)} alt={`${symbol}-icon`} />
-                <p>{symbol}</p>
-              </button>
-            )
-          })}
-        </div>
+        {!tokenProperties ? <Skeleton width="300px" /> : (
+          <div className="quick-select-wrapper" >
+            {QUICK_SELECT_WHITELIST.map((symbol) => {
+              return (
+                <button
+                  className={`quick-select ${srcToken === symbol ? 'active' : ''}`}
+                  onClick={() => {
+                    setLastEditedToken('src')
+                    setSrcToken(symbol)
+                  }}
+                  key={`quick-select-${symbol}`}
+                >
+                  <img src={getTokenIcon(symbol)} alt={`${symbol}-icon`} />
+                  <p>{symbol}</p>
+                </button>
+              )
+            })}
+          </div>
+        )}
       </div>
-      <div className="form-row">
-        <div className={`form-wrapper ${lastEditedToken === 'src' && 'focus'}`}
+      <div className="form-row fade-in">
+        <div
+          className={`form-wrapper ${lastEditedToken === 'src' && 'focus'} ${lastEditedToken === 'src' && 'pulse-shadow'}`}
           onClick={() => {
             setLastEditedToken('src')
             srcInputRef.current?.focus()
@@ -231,10 +236,13 @@ const SwapForm: React.FC = () => {
               onBlur={handleBlur}
               onFocus={() => setLastEditedToken('src')}
             />
-            <button className="token-select" onClick={() => {
-              setLastEditedToken('src')
-              setOpenModal(true)
-            }}
+            <button
+              className="token-select"
+              onClick={() => {
+                setLastEditedToken('src')
+                setOpenModal(true)
+              }}
+              disabled={!tokenProperties || !tokenPriceMap}
             >
               {srcToken ? (
                 <>
@@ -253,7 +261,8 @@ const SwapForm: React.FC = () => {
         <div className="arrow-wrapper">
           <img src={Arrow} alt="arrow-icon" className="arrow-icon" />
         </div>
-        <div className={`form-wrapper ${lastEditedToken === 'dst' && 'focus'}`}
+        <div
+          className={`form-wrapper ${lastEditedToken === 'dst' && 'focus'} ${lastEditedToken === 'dst' && 'pulse-shadow'}`}
           onClick={() => {
             setLastEditedToken('dst')
             dstInputRef.current?.focus()
@@ -271,10 +280,13 @@ const SwapForm: React.FC = () => {
               onBlur={handleBlur}
               onFocus={() => setLastEditedToken('dst')}
             />
-            <button className="token-select" onClick={() => {
-              setLastEditedToken('dst')
-              setOpenModal(true)
-            }}
+            <button
+              className="token-select"
+              onClick={() => {
+                setLastEditedToken('dst')
+                setOpenModal(true)
+              }}
+              disabled={!tokenProperties || !tokenPriceMap}
             >
               {dstToken ? (
                 <>
@@ -288,10 +300,10 @@ const SwapForm: React.FC = () => {
               <img src={Chevron} className="chevron" />
             </button>
           </div>
-          <p className="token-value">{dstTokenValue.toFormat(5)} USD</p>
+          {!tokenPriceMap ? <Skeleton width="100px" /> : <p className="token-value">{dstTokenValue.toFormat(5)} USD</p>}
         </div>
-      </div>
-      <div className="cta-wrapper">
+      </div >
+      <div className="cta-wrapper fade-in">
         <button className="swap-cta" disabled>Swap <p className="coming-soon-tag">Coming Soon</p></button>
       </div>
       <Modal isOpen={openModal} onClose={() => setOpenModal(false)}>
@@ -305,11 +317,13 @@ const SwapForm: React.FC = () => {
             {ERC20_TOKEN_WHITELIST.map((token) => {
               return (
                 <div className="token-option" onClick={() => handleModalSelectToken(token.symbol)} key={token.symbol}>
-                  <div className="token-group">
-                    <img src={`./node_modules/cryptocurrency-icons/svg/color/${token.symbol.toLowerCase()}.svg`} alt={`${srcToken}-icon`} />
-                    <p>{token.symbol}</p>
-                  </div>
-                  <p>{new BigNumber(tokenPriceMap?.[token.symbol] ?? 0).toFormat(5)}</p>
+                  {!tokenProperties ? <Skeleton width="150px" /> : (
+                    <div className="token-group">
+                      <img src={`./node_modules/cryptocurrency-icons/svg/color/${token.symbol.toLowerCase()}.svg`} alt={`${srcToken}-icon`} />
+                      <p>{token.symbol}</p>
+                    </div>
+                  )}
+                  {!tokenPriceMap ? <Skeleton width="100px" /> : <p>{new BigNumber(tokenPriceMap?.[token.symbol] ?? 0).toFormat(5)}</p>}
                 </div>
               )
             })}
@@ -317,7 +331,7 @@ const SwapForm: React.FC = () => {
           <p className="last-update-text">Last updated: {pricesLastUpdated ?? "-"}</p>
         </div>
       </Modal>
-    </div>
+    </div >
   )
 }
 

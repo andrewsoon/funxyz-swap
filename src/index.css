@@ -103,13 +103,45 @@ button:hover {
   transform: scale(1.03);
 }
 button:disabled {
-  background-color: #b9b9b9;
+  background-color: #868686;
   color: #505050;
 }
 
 button:disabled:hover {
   transform: none;
   cursor: not-allowed;
+}
+
+.fade-in {
+  opacity: 0;
+  animation: fadeIn 2.6s ease-out forwards;
+  transform: translateY(-10px);
+}
+
+.main-fade-in {
+  opacity: 0;
+  animation: fadeIn 1.3s ease-out forwards;
+  transform: translateY(-10px);
+}
+
+.pulse-shadow {
+  animation: growShadow 0.3s ease-out forwards;
+}
+
+@keyframes growShadow {
+  0% {
+    box-shadow: 0 0 0 rgba(236, 236, 236, 0.2);
+  }
+  100% {
+    box-shadow: 0 0 8px rgba(236, 236, 236, 0.6);
+  }
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (max-width: 600px) {
