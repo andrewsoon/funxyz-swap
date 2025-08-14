@@ -210,7 +210,7 @@ const SwapForm: React.FC = () => {
       <h4 className="subheader">Compare token values before you swap</h4>
       <div className="quick-select-row fade-in">
         Quick select (From):
-        {!tokenProperties ? <Skeleton width="300px" /> : (
+        {!tokenProperties ? <Skeleton width="400px" height="40px" /> : (
           <div className="quick-select-wrapper" >
             {QUICK_SELECT_WHITELIST.map((symbol) => {
               return (
