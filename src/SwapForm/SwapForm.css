@@ -76,10 +76,6 @@
   align-items: flex-start;
 }
 
-.form-wrapper:hover {
-  cursor: pointer;
-}
-
 .form-wrapper.focus {
   background-color: #181818;
 }
@@ -189,7 +185,12 @@
 }
 
 .token-value {
+  display: block;
   width: 100%;
+  max-width: 300px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   text-align: start;
   margin: 0px 0px 16px;
 }
@@ -243,7 +244,7 @@
     flex-direction: column;
   }
   .form-wrapper {
-    min-width: 80%;
+    width: 80%;
     min-height: auto;
     padding: 16px;
   }
