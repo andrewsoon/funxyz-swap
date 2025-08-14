@@ -246,7 +246,7 @@ const SwapForm: React.FC = () => {
             >
               {srcToken ? (
                 <>
-                  <img src={`./node_modules/cryptocurrency-icons/svg/color/${srcToken.toLowerCase()}.svg`} alt={`${srcToken}-icon`} />
+                  <img src={getTokenIcon(srcToken)} alt={`${srcToken}-icon`} />
                   <p>{srcToken}</p>
 
                 </>
@@ -290,7 +290,7 @@ const SwapForm: React.FC = () => {
             >
               {dstToken ? (
                 <>
-                  <img src={`./node_modules/cryptocurrency-icons/svg/color/${dstToken.toLowerCase()}.svg`} alt={`${dstToken}-icon`} />
+                  <img src={getTokenIcon(dstToken)} alt={`${dstToken}-icon`} />
                   <p>{dstToken}</p>
 
                 </>
@@ -319,7 +319,7 @@ const SwapForm: React.FC = () => {
                 <div className="token-option" onClick={() => handleModalSelectToken(token.symbol)} key={token.symbol}>
                   {!tokenProperties ? <Skeleton width="150px" /> : (
                     <div className="token-group">
-                      <img src={`./node_modules/cryptocurrency-icons/svg/color/${token.symbol.toLowerCase()}.svg`} alt={`${srcToken}-icon`} />
+                      <img src={getTokenIcon(token.symbol)} alt={`${token.symbol}-icon`} />
                       <p>{token.symbol}</p>
                     </div>
                   )}
