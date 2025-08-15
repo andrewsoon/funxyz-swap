@@ -26,6 +26,7 @@ const SwapForm: React.FC = () => {
   const [srcTokenAmount, setSrcTokenAmount] = useState<number | undefined>(undefined)
   const [dstToken, setDstToken] = useState<undefined | string>(undefined)
   const [dstTokenAmount, setDstTokenAmount] = useState<number | undefined>(undefined)
+  const [error, setError] = useState<{ [x: string]: string }>({})
 
   const [openModal, setOpenModal] = useState<boolean>(false)
 
@@ -115,7 +116,6 @@ const SwapForm: React.FC = () => {
         const dstPrice = tokenPriceMap[symbol] ?? 0
         const dstDp = tokenProperties[symbol]?.decimals ?? 0
         const convertedDstAmount = new BigNumber(srcTokenAmount).times(srcPrice).div(dstPrice).dp(dstDp, BigNumber.ROUND_DOWN).toNumber()
-        console.log('xx', convertedDstAmount, srcTokenAmount, srcPrice, dstPrice)
         setDstTokenAmount(convertedDstAmount)
       }
     }
@@ -154,7 +154,22 @@ const SwapForm: React.FC = () => {
     type: TokenSourceOrDest
   ) => {
     const isSrc = type === "src"
-    const parsed = parseFloat(e.target.value)
+    const numberRegex = /^-?(0|[1-9][0-9]*)$/
+    const input = e.target.value
+    if (input && !numberRegex.test(input)) {
+      setError((err) => {
+        return {
+          ...err,
+          [type]: "Please enter a number."
+        }
+      })
+    } else {
+      setError((err) => ({
+        ...err,
+        [type]: ""
+      }))
+    }
+    const parsed = parseFloat(input)
 
     let amount
     if (!isNaN(parsed)) {
@@ -231,7 +246,7 @@ const SwapForm: React.FC = () => {
       </div>
       <div className="form-row fade-in">
         <div
-          className={`form-wrapper ${lastEditedToken === 'src' && 'focus'} ${lastEditedToken === 'src' && 'pulse-shadow'}`}
+          className={`form-wrapper ${lastEditedToken === 'src' && 'focus'} ${lastEditedToken === 'src' && 'pulse-shadow'} ${!!error['src'] && 'error-shadow'}`}
         >
           <h4 className="form-header">From</h4>
           <div className={`amount-row ${lastEditedToken === 'src' && 'focus'}`}>
@@ -239,7 +254,7 @@ const SwapForm: React.FC = () => {
               id="src-token-amount-input"
               type="number"
               value={srcTokenAmount ?? ''}
-              className={`amount-input ${lastEditedToken === 'src' && 'focus'}`}
+              className={`amount-input ${lastEditedToken === 'src' && 'focus'} ${!!error['src'] && 'error-text'}`}
               onChange={(e) => handleInputAmountChange(e, 'src')}
               placeholder="0"
               onBlur={handleBlur}
@@ -265,13 +280,17 @@ const SwapForm: React.FC = () => {
               <img src={Chevron} className="chevron" />
             </button>
           </div>
-          <p className="token-value">{srcTokenValue.toFormat(5)} USD</p>
+          {error['src']
+            ? <p className="token-value error-text">{error['src']}</p>
+            : !tokenPriceMap ? <Skeleton width="100px" />
+              : <p className="token-value">{srcTokenValue.toFormat(5)} USD</p>
+          }
         </div>
         <div className="arrow-wrapper">
           <img src={Arrow} alt="arrow-icon" className="arrow-icon" />
         </div>
         <div
-          className={`form-wrapper ${lastEditedToken === 'dst' && 'focus'} ${lastEditedToken === 'dst' && 'pulse-shadow'}`}
+          className={`form-wrapper ${lastEditedToken === 'dst' && 'focus'} ${lastEditedToken === 'dst' && 'pulse-shadow'} ${!!error['dst'] && 'error-shadow'}`}
         >
           <h4 className="form-header">To</h4>
           <div className={`amount-row ${lastEditedToken === 'dst' && 'focus'}`}>
@@ -279,7 +298,7 @@ const SwapForm: React.FC = () => {
               id="dst-token-amount-input"
               type="number"
               value={dstTokenAmount ?? ''}
-              className={`amount-input ${lastEditedToken === 'dst' && 'focus'}`}
+              className={`amount-input ${lastEditedToken === 'dst' && 'focus'} ${!!error['dst'] && 'error-text'}`}
               onChange={(e) => handleInputAmountChange(e, 'dst')}
               placeholder="0"
               onBlur={handleBlur}
@@ -305,7 +324,11 @@ const SwapForm: React.FC = () => {
               <img src={Chevron} className="chevron" />
             </button>
           </div>
-          {!tokenPriceMap ? <Skeleton width="100px" /> : <p className="token-value">{dstTokenValue.toFormat(5)} USD</p>}
+          {error['dst']
+            ? <p className="token-value error-text">{error['dst']}</p>
+            : !tokenPriceMap ? <Skeleton width="100px" />
+              : <p className="token-value">{dstTokenValue.toFormat(5)} USD</p>
+          }
         </div>
       </div >
       <div className="cta-wrapper fade-in">

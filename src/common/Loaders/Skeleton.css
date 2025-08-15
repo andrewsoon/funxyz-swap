@@ -32,3 +32,10 @@
     left: 100%;
   }
 }
+
+@media (max-width: 600px) {
+  .skeleton {
+    max-width: 80%;
+    max-height: 30px;
+  }
+}

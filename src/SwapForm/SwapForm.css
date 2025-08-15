@@ -195,6 +195,10 @@
   margin: 0px 0px 16px;
 }
 
+.error-text {
+  color: #ff0022;
+}
+
 .arrow-wrapper {
   padding: 8px;
   border-radius: 8px;
