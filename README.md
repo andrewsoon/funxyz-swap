@@ -91,4 +91,5 @@ yarn dev
 - Handle network errors and offline mode gracefully.
 - Add theming (light/dark mode).
 - Input validation with max length and decimal restrictions.
+- Add retry/recovery logic for failed token price fetches to improve resilience.
 
