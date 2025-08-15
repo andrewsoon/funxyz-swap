@@ -161,20 +161,17 @@ const SwapForm: React.FC = () => {
     type: TokenSourceOrDest
   ) => {
     const isSrc = type === "src"
-    const numberRegex = /^-?(0|[1-9][0-9]*)$/
+    const negativeNumberRegex = /^-[1-9][0-9]*$/
     const input = e.target.value
-    if (input && !numberRegex.test(input)) {
+    if (input && negativeNumberRegex.test(input)) {
       setError((err) => {
         return {
           ...err,
-          [type]: "Please enter a number."
+          [type]: "Please enter a positive amount."
         }
       })
     } else {
-      setError((err) => ({
-        ...err,
-        [type]: ""
-      }))
+      setError({})
     }
     const parsed = parseFloat(input)
 
@@ -202,6 +199,7 @@ const SwapForm: React.FC = () => {
       const cleanedDstAmount = new BigNumber(dstTokenAmount).dp(dstDp, BigNumber.ROUND_DOWN).toNumber()
       setDstTokenAmount(Math.max(cleanedDstAmount, 0))
     }
+    setError({})
   }
 
   useEffect(() => {
@@ -264,6 +262,8 @@ const SwapForm: React.FC = () => {
             <input
               id="src-token-amount-input"
               type="number"
+              inputMode="numeric"
+              pattern="[0-9]*"
               value={srcTokenAmount ?? ''}
               className={`amount-input ${lastEditedToken === 'src' && 'focus'} ${!!error['src'] && 'error-text'}`}
               onChange={(e) => handleInputAmountChange(e, 'src')}
@@ -308,6 +308,8 @@ const SwapForm: React.FC = () => {
             <input
               id="dst-token-amount-input"
               type="number"
+              inputMode="numeric"
+              pattern="[0-9]*"
               value={dstTokenAmount ?? ''}
               className={`amount-input ${lastEditedToken === 'dst' && 'focus'} ${!!error['dst'] && 'error-text'}`}
               onChange={(e) => handleInputAmountChange(e, 'dst')}
