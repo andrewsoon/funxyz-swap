@@ -61,15 +61,22 @@ const SwapForm: React.FC = () => {
   }, [])
 
   useEffect(() => {
-    if (!tokenProperties) return
     const fetchTokenPrices = async () => {
       try {
         if (!apiKey) throw new Error('Invalid API key')
-
         if (!tokenProperties) throw new Error('Token properties not initialized')
 
+        const tokensToFetch = ERC20_TOKEN_WHITELIST.filter(
+          ({ symbol }) => tokenProperties?.[symbol]?.address
+        )
+
+        if (tokensToFetch.length === 0) {
+          console.warn('No valid tokens to fetch prices for')
+          return
+        }
+
         const results = await Promise.allSettled(
-          ERC20_TOKEN_WHITELIST.map(({ chainId, symbol }) => getAssetPriceInfo({
+          tokensToFetch.map(({ chainId, symbol }) => getAssetPriceInfo({
             chainId,
             assetTokenAddress: tokenProperties[symbol]?.address ?? "",
             apiKey,
@@ -80,9 +87,9 @@ const SwapForm: React.FC = () => {
         results.forEach((result, index) => {
           if (result.status === 'fulfilled') {
             const tokenPrice = result.value
-            priceMap[ERC20_TOKEN_WHITELIST[index].symbol] = tokenPrice.unitPrice
+            priceMap[tokensToFetch[index].symbol] = tokenPrice.unitPrice
           } else {
-            console.error(`Failed to fetch ${ERC20_TOKEN_WHITELIST[index].symbol} price:`, result.reason)
+            console.error(`Failed to fetch ${tokensToFetch[index].symbol} price:`, result.reason)
           }
         })
         setTokenPriceMap(priceMap)
@@ -227,20 +234,24 @@ const SwapForm: React.FC = () => {
         Quick select (From):
         {!tokenProperties ? <Skeleton width="400px" height="40px" /> : (
           <div className="quick-select-wrapper" >
-            {QUICK_SELECT_WHITELIST.map((symbol) => {
-              return (
-                <button
-                  className={`quick-select ${srcToken === symbol ? 'active' : ''}`}
-                  onClick={() => {
-                    setSrcToken(symbol)
-                  }}
-                  key={`quick-select-${symbol}`}
-                >
-                  <img src={getTokenIcon(symbol)} alt={`${symbol}-icon`} />
-                  <p>{symbol}</p>
-                </button>
-              )
-            })}
+            {QUICK_SELECT_WHITELIST.some(symbol => tokenProperties?.[symbol])
+              ? (QUICK_SELECT_WHITELIST.map((symbol) => {
+                if (!tokenProperties?.[symbol]) return
+                return (
+                  <button
+                    className={`quick-select ${srcToken === symbol ? 'active' : ''}`}
+                    onClick={() => {
+                      setSrcToken(symbol)
+                    }}
+                    key={`quick-select-${symbol}`}
+                  >
+                    <img src={getTokenIcon(symbol)} alt={`${symbol}-icon`} />
+                    <p>{symbol}</p>
+                  </button>
+                )
+              }))
+              : '-'
+            }
           </div>
         )}
       </div>
@@ -343,14 +354,13 @@ const SwapForm: React.FC = () => {
           </div>
           <div className="token-list">
             {ERC20_TOKEN_WHITELIST.map((token) => {
+              if (!tokenProperties?.[token.symbol]) return
               return (
                 <div className="token-option" onClick={() => handleModalSelectToken(token.symbol)} key={token.symbol}>
-                  {!tokenProperties ? <Skeleton width="150px" /> : (
-                    <div className="token-group">
-                      <img src={getTokenIcon(token.symbol)} alt={`${token.symbol}-icon`} />
-                      <p>{token.symbol}</p>
-                    </div>
-                  )}
+                  <div className="token-group">
+                    <img src={getTokenIcon(token.symbol)} alt={`${token.symbol}-icon`} />
+                    <p>{token.symbol}</p>
+                  </div>
                   {!tokenPriceMap ? <Skeleton width="100px" /> : <p>{new BigNumber(tokenPriceMap?.[token.symbol] ?? 0).toFormat(5)}</p>}
                 </div>
               )
