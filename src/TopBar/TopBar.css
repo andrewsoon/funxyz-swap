@@ -5,6 +5,10 @@
   padding: 2.5rem;
 }
 
+.logo-link {
+  margin: 0px;
+}
+
 .topbar-logo {
   width: 85px;
 }

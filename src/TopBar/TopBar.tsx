@@ -6,7 +6,9 @@ import "./TopBar.css"
 const TopBar: React.FC = () => {
   return (
     <div className="topbar-wrapper">
-      <img src={FunSVG} className="topbar-logo" />
+      <a className="logo-link" href={StaticLinks.HomePage} target="_blank">
+        <img src={FunSVG} className="topbar-logo" />
+      </a>
       <button onClick={() => window.open(StaticLinks.GoogleForm, '_blank')} >Get in touch</button>
     </div>
   )
